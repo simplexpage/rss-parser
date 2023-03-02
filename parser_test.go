@@ -13,7 +13,7 @@ func TestParseURLs(t *testing.T) {
 		"https://www.reddit.com/r/golang/comments/.rss",
 		"https://www.reddit.com/r/golang/controversial/.rss",
 	}
-	rssUrlsParser := rssparser.NewParser()
+	rssUrlsParser := rssparser.NewRssParser()
 	rssItems, err := rssUrlsParser.ParseURLs(rssUrls)
 	if err != nil {
 		t.Error(err)
