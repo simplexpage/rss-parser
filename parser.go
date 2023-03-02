@@ -3,8 +3,9 @@ package rss_parser
 import (
 	"context"
 	"fmt"
-	"io"
+	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -19,22 +20,28 @@ func NewRssParser() *RssParser {
 	}
 }
 
-func (f *RssParser) ParseURLs(urls []string) (rssItems []RssItem, err error) {
+func (f *RssParser) ParseURLs(urls []string) ([]RssItem, error) {
+	var rssItems []RssItem
 	for _, url := range urls {
-		rssItems = append(rssItems, RssItem{
-			Title:       "title",
-			Source:      "source",
-			SourceURL:   url,
-			Link:        "link",
-			PublishDate: time.Now(),
-			Description: "description",
-		})
-		f.parseURLWithContext(url, context.Background())
+		feed, err := f.parseURLWithContext(url, context.Background())
+		if err != nil {
+			return nil, err
+		}
+		for _, item := range feed.Items {
+			rssItems = append(rssItems, RssItem{
+				Title:       item.Title,
+				Source:      feed.Title,
+				SourceURL:   feed.Link,
+				Link:        item.Link,
+				PublishDate: item.Date,
+				Description: item.Description,
+			})
+		}
 	}
 	return rssItems, nil
 }
 
-func (f *RssParser) parseURLWithContext(rssURL string, ctx context.Context) (rssItems []RssItem, err error) {
+func (f *RssParser) parseURLWithContext(rssURL string, ctx context.Context) (feed *Feed, err error) {
 	client := f.httpClient()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rssURL, nil)
@@ -65,11 +72,23 @@ func (f *RssParser) parseURLWithContext(rssURL string, ctx context.Context) (rss
 		}
 	}
 
-	return f.parse(resp.Body)
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return f.parseRSS(body)
 }
 
-func (f *RssParser) parse(rss io.Reader) (rssItems []RssItem, err error) {
-	return
+func (f *RssParser) parseRSS(data []byte) (feed *Feed, err error) {
+	if strings.Contains(string(data), "<rss") {
+		return parseRSS2(data)
+	} else if strings.Contains(string(data), "xmlns=\"http://purl.org/rss/1.0/\"") {
+		return parseRSS1(data)
+	}
+	// TODO: implement atom parser
+
+	return nil, fmt.Errorf("unknown rss format")
 }
 
 func (f *RssParser) httpClient() *http.Client {
@@ -96,4 +115,17 @@ type RssItem struct {
 	Link        string
 	PublishDate time.Time
 	Description string
+}
+
+type Feed struct {
+	Title string  `xml:"title"`
+	Link  string  `xml:"link"`
+	Items []*Item `json:"items"`
+}
+
+type Item struct {
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	Link        string    `json:"link"`
+	Date        time.Time `json:"date"`
 }

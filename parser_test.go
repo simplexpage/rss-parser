@@ -7,11 +7,7 @@ import (
 
 func TestParseURLs(t *testing.T) {
 	rssUrls := []string{
-		"https://www.reddit.com/r/golang/.rss",
-		"https://www.reddit.com/r/golang/new/.rss",
-		"https://www.reddit.com/r/golang/top/.rss",
-		"https://www.reddit.com/r/golang/comments/.rss",
-		"https://www.reddit.com/r/golang/controversial/.rss",
+		"https://www.pravda.com.ua/rus/rss/view_news/",
 	}
 	rssUrlsParser := rssparser.NewRssParser()
 	rssItems, err := rssUrlsParser.ParseURLs(rssUrls)
