@@ -7,7 +7,8 @@ import (
 
 func TestParseURLs(t *testing.T) {
 	rssUrls := []string{
-		"https://www.pravda.com.ua/rus/rss/view_news/",
+		"https://tsn.ua/rss/full.rss",
+		"https://www.pravda.com.ua/rus/rss/",
 	}
 	rssUrlsParser := rssparser.NewRssParser()
 	rssItems, err := rssUrlsParser.ParseURLs(rssUrls)

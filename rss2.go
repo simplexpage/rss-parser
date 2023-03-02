@@ -5,7 +5,9 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"golang.org/x/text/encoding/charmap"
 	"io"
+	"io/ioutil"
 	"strings"
 	"time"
 )
@@ -69,8 +71,11 @@ func parseDate(date string) time.Time {
 }
 
 func charsetReader(charset string, input io.Reader) (io.Reader, error) {
-	if isCharsetUTF8(charset) {
+	switch {
+	case isCharsetUTF8(charset):
 		return input, nil
+	case isCharsetWindows1251(charset):
+		return newUT8CharsetFromWindows1251(input), nil
 	}
 	// TODO: implement other charsets
 	return nil, errors.New("CharsetReader: unexpected charset: " + charset)
@@ -92,4 +97,21 @@ func isCharsetUTF8(charset string) bool {
 		"",
 	}
 	return isCharset(charset, names)
+}
+
+func isCharsetWindows1251(charset string) bool {
+	names := []string{
+		"windows-1251",
+	}
+	return isCharset(charset, names)
+}
+
+func newUT8CharsetFromWindows1251(input io.Reader) io.Reader {
+	decoder := charmap.Windows1251.NewDecoder()
+	reader := decoder.Reader(input)
+	b, err := ioutil.ReadAll(reader)
+	if err != nil {
+		panic(err)
+	}
+	return bytes.NewReader(b)
 }
