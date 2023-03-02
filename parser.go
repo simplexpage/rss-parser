@@ -2,6 +2,7 @@ package rss_parser
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -9,48 +10,46 @@ import (
 	"time"
 )
 
-type RssParser struct {
-	HttpClient *http.Client
-	UserAgent  string
-}
+// ParseURLs parses rss feeds from urls
+func ParseURLs(urls []string) ([]RssItem, error) {
 
-func NewRssParser() *RssParser {
-	return &RssParser{
-		UserAgent: "rss-parser",
+	if len(urls) == 0 {
+		return nil, errors.New("no urls provided")
+	}
+
+	rssItems := make([]RssItem, 0)
+
+	wp := NewWorkerPool(len(urls))
+
+	ctx, cancel := context.WithCancel(context.TODO())
+	defer cancel()
+
+	go wp.AddJob(urls)
+
+	go wp.Run(ctx)
+
+	for {
+		select {
+		case r, ok := <-wp.Results():
+			if !ok {
+				continue
+			}
+			rssItems = append(rssItems, r.Items...)
+		case <-wp.Done:
+			return rssItems, nil
+		default:
+		}
 	}
 }
 
-func (f *RssParser) ParseURLs(urls []string) ([]RssItem, error) {
-	var rssItems []RssItem
-	for _, url := range urls {
-		feed, err := f.parseURLWithContext(url, context.Background())
-		if err != nil {
-			return nil, err
-		}
-		for _, item := range feed.Items {
-			rssItems = append(rssItems, RssItem{
-				Title:       item.Title,
-				Source:      feed.Title,
-				SourceURL:   feed.Link,
-				Link:        item.Link,
-				PublishDate: item.Date,
-				Description: item.Description,
-			})
-		}
-	}
-	return rssItems, nil
-}
-
-func (f *RssParser) parseURLWithContext(rssURL string, ctx context.Context) (feed *Feed, err error) {
-	client := f.httpClient()
-
+// parseURLWithContext requests rss feed from url
+func parseURLWithContext(ctx context.Context, rssURL string) (feed *Feed, err error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rssURL, nil)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("User-Agent", f.UserAgent)
 
-	resp, err := client.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 
 	if err != nil {
 		return nil, err
@@ -65,7 +64,7 @@ func (f *RssParser) parseURLWithContext(rssURL string, ctx context.Context) (fee
 		}()
 	}
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return nil, HTTPError{
 			StatusCode: resp.StatusCode,
 			Status:     resp.Status,
@@ -77,37 +76,34 @@ func (f *RssParser) parseURLWithContext(rssURL string, ctx context.Context) (fee
 		return nil, err
 	}
 
-	return f.parseRSS(body)
+	return parseRSS(body)
 }
 
-func (f *RssParser) parseRSS(data []byte) (feed *Feed, err error) {
+// parseRSS parses rss feed from bytes
+func parseRSS(data []byte) (feed *Feed, err error) {
 	if strings.Contains(string(data), "<rss") {
 		return parseRSS2(data)
 	} else if strings.Contains(string(data), "xmlns=\"http://purl.org/rss/1.0/\"") {
-		return parseRSS1(data)
+		// TODO: implement rss 1.0 parser
+		return nil, fmt.Errorf("unknown rss format")
+	} else {
+		// TODO: implement atom parser
+		return nil, fmt.Errorf("unknown rss format")
 	}
-	// TODO: implement atom parser
-
-	return nil, fmt.Errorf("unknown rss format")
 }
 
-func (f *RssParser) httpClient() *http.Client {
-	if f.HttpClient != nil {
-		return f.HttpClient
-	}
-	f.HttpClient = &http.Client{}
-	return f.HttpClient
-}
-
+// HTTPError is an error type for http errors
 type HTTPError struct {
 	StatusCode int
 	Status     string
 }
 
+// Error returns error message
 func (err HTTPError) Error() string {
 	return fmt.Sprintf("http error: %s", err.Status)
 }
 
+// RssItem is a struct for rss item
 type RssItem struct {
 	Title       string
 	Source      string
@@ -117,12 +113,14 @@ type RssItem struct {
 	Description string
 }
 
+// Feed is a struct for rss feed
 type Feed struct {
 	Title string  `xml:"title"`
 	Link  string  `xml:"link"`
 	Items []*Item `json:"items"`
 }
 
+// Item is a struct for return rss items
 type Item struct {
 	Title       string    `json:"title"`
 	Description string    `json:"description"`

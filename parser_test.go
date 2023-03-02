@@ -5,13 +5,12 @@ import (
 	"testing"
 )
 
-func TestParseURLs(t *testing.T) {
+func TestRssParser_ParseURLs(t *testing.T) {
 	rssUrls := []string{
 		"https://tsn.ua/rss/full.rss",
 		"https://www.pravda.com.ua/rus/rss/",
 	}
-	rssUrlsParser := rssparser.NewRssParser()
-	rssItems, err := rssUrlsParser.ParseURLs(rssUrls)
+	rssItems, err := rssparser.ParseURLs(rssUrls)
 	if err != nil {
 		t.Error(err)
 	}
