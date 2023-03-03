@@ -23,8 +23,7 @@ func main() {
 		"https://www.reddit.com/r/golang/comments/.rss",
 		"https://www.reddit.com/r/golang/controversial/.rss",
 	}
-	rssUrlsParser := rssparser.NewRssParser()
-	rssItems, err := rssUrlsParser.ParseURLs(rssUrls)
+	rssItems, err := rssparser.ParseURLs(rssUrls)
 	if err != nil {
 		// handle error.
 	}
