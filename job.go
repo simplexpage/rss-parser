@@ -26,7 +26,7 @@ func (j Job) execute(ctx context.Context) Result {
 		rssItems = append(rssItems, RssItem{
 			Title:       item.Title,
 			Source:      feed.Title,
-			SourceURL:   feed.Link,
+			SourceURL:   j.Url,
 			Link:        item.Link,
 			PublishDate: item.Date,
 			Description: item.Description,
