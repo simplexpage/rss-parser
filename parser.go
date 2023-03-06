@@ -34,6 +34,9 @@ func ParseURLs(urls []string) ([]RssItem, error) {
 			if !ok {
 				continue
 			}
+			if r.Err != nil {
+				return nil, r.Err
+			}
 			rssItems = append(rssItems, r.Items...)
 		case <-wp.Done:
 			return rssItems, nil

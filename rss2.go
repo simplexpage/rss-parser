@@ -72,7 +72,8 @@ func parseDate(date string) time.Time {
 	if err != nil {
 		dateNew = time.Now()
 	}
-	return dateNew
+
+	return dateNew.UTC()
 }
 
 // charsetReader is a function for reading charset
