@@ -11,7 +11,7 @@ import (
 )
 
 // ParseURLs parses rss feeds from urls
-func ParseURLs(urls []string) ([]RssItem, error) {
+func ParseURLs(ctx context.Context, urls []string) ([]RssItem, error) {
 
 	if len(urls) == 0 {
 		return nil, errors.New("no urls provided")
@@ -20,9 +20,6 @@ func ParseURLs(urls []string) ([]RssItem, error) {
 	rssItems := make([]RssItem, 0)
 
 	wp := NewWorkerPool(len(urls))
-
-	ctx, cancel := context.WithCancel(context.TODO())
-	defer cancel()
 
 	go wp.AddJob(urls)
 

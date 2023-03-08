@@ -1,6 +1,7 @@
 package rss_parser_test
 
 import (
+	"context"
 	"fmt"
 	rssparser "github.com/simplexpage/rss-parser"
 	"github.com/stretchr/testify/assert"
@@ -54,7 +55,7 @@ func TestParseURLsSuccess(t *testing.T) {
 		}
 	}
 
-	feed, err := rssparser.ParseURLs(feedsUrls)
+	feed, err := rssparser.ParseURLs(context.Background(), feedsUrls)
 
 	assert.NotNil(t, feed)
 	assert.Nil(t, err)
@@ -63,7 +64,7 @@ func TestParseURLsSuccess(t *testing.T) {
 
 func TestParseURLsFailure(t *testing.T) {
 	server, _ := mockServerResponse(404, "", 0)
-	feed, err := rssparser.ParseURLs([]string{server.URL})
+	feed, err := rssparser.ParseURLs(context.Background(), []string{server.URL})
 
 	assert.NotNil(t, err)
 	assert.IsType(t, rssparser.HTTPError{}, err)
@@ -72,7 +73,9 @@ func TestParseURLsFailure(t *testing.T) {
 
 func TestParser_ParseURLWithContext(t *testing.T) {
 	server, _ := mockServerResponse(404, "", 1*time.Minute)
-	_, err := rssparser.ParseURLs([]string{server.URL})
+	ctxTime, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	_, err := rssparser.ParseURLs(ctxTime, []string{server.URL})
 	assert.True(t, strings.Contains(err.Error(), "context deadline exceeded"))
 }
 
@@ -100,7 +103,11 @@ func ExampleRssParser_ParseURLs() {
 		"https://tsn.ua/rss/full.rss",
 		"https://www.pravda.com.ua/rus/rss/",
 	}
-	rssItems, err := rssparser.ParseURLs(rssUrls)
+
+	ctxTime, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	rssItems, err := rssparser.ParseURLs(ctxTime, rssUrls)
 	if err != nil {
 		fmt.Println(err)
 	}

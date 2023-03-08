@@ -2,7 +2,6 @@ package rss_parser
 
 import (
 	"context"
-	"time"
 )
 
 // Result is a struct that holds the result of a job
@@ -18,9 +17,7 @@ type Job struct {
 
 // execute executes the job
 func (j Job) execute(ctx context.Context) Result {
-	ctxTime, cancel := context.WithTimeout(ctx, 3*time.Second)
-	defer cancel()
-	feed, err := parseURLWithContext(ctxTime, j.Url)
+	feed, err := parseURLWithContext(ctx, j.Url)
 	if err != nil {
 		return Result{
 			Err: err,
