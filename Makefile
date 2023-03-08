@@ -6,3 +6,6 @@ cover:
 
 race:
 	go test -v -race -count=1 ./...
+
+test:
+	go test -v -count=1 ./...

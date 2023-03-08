@@ -42,3 +42,8 @@ type RssItem struct{
     Description string
 }
 ```
+
+## Tests
+```bash
+make test
+```
