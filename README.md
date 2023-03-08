@@ -17,13 +17,14 @@ package main
 import rssparser "github.com/simplexpage/rss-parser"
 func main() {
 	rssUrls := []string{
-		"https://www.reddit.com/r/golang/.rss",
-		"https://www.reddit.com/r/golang/new/.rss",
-		"https://www.reddit.com/r/golang/top/.rss",
-		"https://www.reddit.com/r/golang/comments/.rss",
-		"https://www.reddit.com/r/golang/controversial/.rss",
+		"https://tsn.ua/rss/full.rss",
+		"https://www.pravda.com.ua/rus/rss/",
 	}
-	rssItems, err := rssparser.ParseURLs(rssUrls)
+
+	ctxTime, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	
+	rssItems, err := rssparser.ParseURLs(ctxTime,rssUrls)
 	if err != nil {
 		// handle error.
 	}
